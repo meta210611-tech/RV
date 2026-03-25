@@ -289,7 +289,24 @@
             i.disabled = true; btn.classList.add('hidden'); ldr.classList.remove('hidden');
             const p = projects.find(x => x.id === currentProjectId);
 
+            
             try {
                 const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                     method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${s.key}`},
-                    body: JSON.stringify({ model: s.model, messages: 
+                    body: JSON.stringify({ model: s.model, messages: [{role:"system",content:SYSTEM_PROMPT}, ...p.history, {role:"user",content:i.value}] })
+                });
+                const d = await res.json(); 
+                const generatedHtml = d.choices[0].message.content.replace(/```html|```|<think>[\s\S]*?<\/think>/g, '');
+                
+                p.history.push({role:"user",content:i.value}, {role:"assistant",content:generatedHtml}); 
+                p.files.html = generatedHtml; // Update only the HTML file tab
+                
+                sync(); refreshCodeEditor(); compileAndPreview(); i.value = '';
+            } catch(e) { alert("API Connection Failed."); } 
+            finally { i.disabled = false; btn.classList.remove('hidden'); ldr.classList.add('hidden'); i.focus(); }
+        }
+
+        function saveSettings() {
+            localStorage.setItem('metai_settings', JSON.stringify({ key: document.getElementById('setting-key').value, model: document.getElementById('setting-model').value }));
+            toggleSettings();
+        }
