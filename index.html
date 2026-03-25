@@ -310,3 +310,27 @@
             localStorage.setItem('metai_settings', JSON.stringify({ key: document.getElementById('setting-key').value, model: document.getElementById('setting-model').value }));
             toggleSettings();
         }
+        function downloadCode() {
+            const p = projects.find(x => x.id === currentProjectId); if(!p) return;
+            
+            // Download a Zip file logic would go here for production, but for now we export a bundled HTML
+            let finalCode = p.files.html;
+            if(finalCode.includes('</body>')) {
+                finalCode = finalCode.replace('</body>', `<style>${p.files.css}</style><script>${p.files.js}<\/script></body>`);
+            } else { finalCode += `<style>${p.files.css}</style><script>${p.files.js}<\/script>`; }
+
+            const b = new Blob([finalCode], {type:'text/html'}); const u = URL.createObjectURL(b);
+            const a = document.createElement('a'); a.href = u; a.download = `${p.name}_bundled.html`; a.click();
+        }
+
+        function undoChange() {
+            const p = projects.find(x => x.id === currentProjectId);
+            if(p && p.history.length > 2) { 
+                p.history.splice(-2); 
+                p.files.html = p.history[p.history.length-1].content; 
+                sync(); refreshCodeEditor(); compileAndPreview(); 
+            }
+        }
+    </script>
+</body>
+</html>
