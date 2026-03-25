@@ -1,1 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>METAI - AI Website Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        
+        body {
+            min-height: 100dvh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
 
+        .checkerboard {
+            background-image: linear-gradient(45deg, #e2e8f0 25%, transparent 25%), linear-gradient(-45deg, #e2e8f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e2e8f0 75%), linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            background-color: #f1f5f9;
+        }
+        
+        .loader {
+            border: 2px solid #1e293b;
+            border-radius: 50%;
+            border-top: 2px solid #3b82f6;
+            width: 18px;
+            height: 18px;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .project-btn:hover .delete-btn { opacity: 1; }
+    </style>
+</head>
+<body class="font-sans antialiased">
+
+    <div id="app" class="flex w-full h-full">
+
+        <aside class="w-72 bg-slate-900 border-r border-slate-800 flex flex-col flex-shrink-0 transition-all duration-300 mobile-hidden" id="sidebar">
+            <div class="p-5">
+                <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent mb-6">METAI Builder</h1>
+                <button onclick="createNewProject()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 px-4 rounded-lg transition-all shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 text-sm">
+                    <i class="fas fa-plus-circle"></i> New Project
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto px-3 space-y-6">
+                <div>
+                    <p class="px-3 mb-2 text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Your Projects</p>
+                    <div id="project-list" class="space-y-1"></div>
+                </div>
+                
+                <div>
+                    <p class="px-3 mb-2 text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Quick Components</p>
+                    <div class="space-y-1">
+                        <button onclick="applyTemplate('Add a modern hero section with glassmorphism and animated buttons.')" class="w-full text-left px-3 py-2 text-sm text-slate-400 hover:bg-slate-800 hover:text-white rounded-md transition flex items-center gap-3">
+                            <i class="fas fa-layer-group text-blue-400 w-4 text-center"></i> Hero Section
+                        </button>
+                        <button onclick="applyTemplate('Add a clean contact section with a form and social media links.')" class="w-full text-left px-3 py-2 text-sm text-slate-400 hover:bg-slate-800 hover:text-white rounded-md transition flex items-center gap-3">
+                            <i class="fas fa-paper-plane text-emerald-400 w-4 text-center"></i> Contact Form
+                        </button>
+                        <button onclick="applyTemplate('Add a 3-column pricing table with monthly/yearly toggle.')" class="w-full text-left px-3 py-2 text-sm text-slate-400 hover:bg-slate-800 hover:text-white rounded-md transition flex items-center gap-3">
+                            <i class="fas fa-credit-card text-amber-400 w-4 text-center"></i> Pricing Table
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 bg-slate-950/50 border-t border-slate-800">
+                <button onclick="toggleSettings()" class="w-full text-slate-400 hover:text-white flex items-center gap-3 transition px-3 py-2 text-sm font-medium">
+                    <i class="fas fa-sliders-h"></i> <span>Settings</span>
+                </button>
+            </div>
+        </aside>
+
+        <main class="flex-1 flex flex-col h-full min-w-0 bg-slate-950">
+            
+            <header class="h-16 border-b border-slate-800 bg-slate-900/50 backdrop-blur-md flex items-center justify-between px-6 flex-shrink-0">
+                <div class="flex items-center gap-6">
+                    <div class="flex gap-1.5">
+                        <div class="w-3 h-3 rounded-full bg-slate-700"></div>
+                        <div class="w-3 h-3 rounded-full bg-slate-700"></div>
+                        <div class="w-3 h-3 rounded-full bg-slate-700"></div>
+                    </div>
+                    <div class="bg-slate-800 p-1 rounded-lg flex text-xs font-bold">
+                        <button id="btn-preview" onclick="setView('preview')" class="px-4 py-1.5 rounded-md bg-blue-600 text-white shadow-sm transition-all">PREVIEW</button>
+                        <button id="btn-code" onclick="setView('code')" class="px-4 py-1.5 rounded-md text-slate-400 hover:text-white transition-all">CODE</button>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button onclick="undoChange()" class="text-slate-400 hover:text-white p-2 transition" title="Undo Last Change">
+                        <i class="fas fa-undo text-sm"></i>
+                    </button>
+                    <button onclick="downloadCode()" class="flex items-center gap-2 bg-slate-800 border border-slate-700 hover:border-blue-500 text-white px-4 py-2 rounded-lg transition text-xs font-bold shadow-sm">
+                        <i class="fas fa-cloud-download-alt"></i> EXPORT HTML
+                    </button>
+                    <button onclick="toggleSidebar()" class="md:hidden text-slate-400 p-2">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </header>
+
+            <div class="flex-1 relative overflow-hidden">
+                <div id="preview-container" class="w-full h-full checkerboard">
+                    <iframe id="preview-frame" class="w-full h-full border-none bg-white"></iframe>
+                </div>
+                
+                <div id="code-container" class="hidden w-full h-full bg-slate-950">
+                    <textarea id="code-editor" class="w-full h-full bg-slate-950 text-blue-300 font-mono p-6 text-sm resize-none focus:outline-none" spellcheck="false" readonly></textarea>
+                </div>
+            </div>
+
+            <footer class="p-6 bg-slate-900/50 backdrop-blur-md border-t border-slate-800">
+                <div class="relative max-w-3xl mx-auto group">
+                    <textarea 
+                        id="user-input" 
+                        placeholder="Type your design request here..." 
+                        class="w-full bg-slate-800 border border-slate-700 text-white rounded-2xl pl-5 pr-14 py-4 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all resize-none h-16 shadow-2xl"
+                        onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }"
+                    ></textarea>
+                    <button onclick="sendMessage()" id="send-btn" class="absolute right-3 top-3 bg-blue-600 hover:bg-blue-500 text-white p-2.5 rounded-xl transition-all shadow-lg">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                    <div id="loading-indicator" class="absolute right-4 top-5 hidden">
+                        <div class="loader"></div>
+                    </div>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <div id="settings-modal" class="fixed inset-0 bg-slate-950/90 hidden items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-8 shadow-2xl">
+            <h2 class="text-2xl font-bold mb-6 text-white flex items-center gap-3">
+                <i class="fas fa-cog text-blue-500"></i> Settings
+            </h2>
+            
+            <div class="space-y-5">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">API Key (OpenRouter)</label>
+                    <input type="password" id="setting-key" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Paste your sk-or-... key">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">AI Model</label>
+                    <input type="text" id="setting-model" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-blue-500 outline-none transition" value="deepseek/deepseek-r1:free">
+                </div>
+            </div>
+
+            <div class="mt-8 flex justify-end gap-3">
+                <button onclick="toggleSettings()" class="px-5 py-2.5 text-slate-400 hover:text-white font-medium transition">Cancel</button>
+                <button onclick="saveSettings()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-900/40">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SYSTEM_PROMPT = `You are a world-class web designer. Generate a SINGLE modern index.html file. Use Tailwind CSS. Output ONLY raw HTML. Always include responsive design.`;
+        const DEFAULT_SETTINGS = { url: "https://openrouter.ai/api/v1/chat/completions", key: "", model: "deepseek/deepseek-r1:free" };
+
+        let projects = JSON.parse(localStorage.getItem('ai_builder_projects')) || [];
+        let currentProjectId = localStorage.getItem('ai_builder_current_id') || null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const settings = JSON.parse(localStorage.getItem('ai_builder_settings')) || DEFAULT_SETTINGS;
+            document.getElementById('setting-key').value = settings.key;
+            document.getElementById('setting-model').value = settings.model;
+            renderProjectList();
+            if (projects.length === 0) createNewProject();
+            else loadProject(currentProjectId || projects[0].id);
+        });
+
+        function toggleSettings() { document.getElementById('settings-modal').classList.toggle('hidden'); document.getElementById('settings-modal').classList.toggle('flex'); }
+
+        function saveSettings() {
+            const newSettings = { url: "https://openrouter.ai/api/v1/chat/completions", key: document.getElementById('setting-key').value, model: document.getElementById('setting-model').value };
+            localStorage.setItem('ai_builder_settings', JSON.stringify(newSettings));
+            toggleSettings();
+        }
+
+        function createNewProject() {
+            const newProject = { id: Date.now().toString(), name: `Project ${projects.length + 1}`, history: [], code: "" };
+            projects.unshift(newProject);
+            saveProjects();
+            loadProject(newProject.id);
+        }
+
+        function deleteProject(id, event) {
+            event.stopPropagation();
+            if(!confirm("Delete this project?")) return;
+            projects = projects.filter(p => p.id !== id);
+            saveProjects();
+            if (projects.length > 0) loadProject(projects[0].id);
+            else createNewProject();
+        }
+
+        function saveProjects() { localStorage.setItem('ai_builder_projects', JSON.stringify(projects)); renderProjectList(); }
+
+        function renderProjectList() {
+            const list = document.getElementById('project-list');
+            list.innerHTML = '';
+            projects.forEach(p => {
+                const div = document.createElement('div');
+                div.className = `project-btn group flex items-center justify-between w-full px-3 py-2.5 text-sm rounded-lg cursor-pointer transition-all ${p.id === currentProjectId ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20 shadow-inner' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`;
+                div.onclick = () => loadProject(p.id);
+                div.innerHTML = `
+                    <span class="truncate pr-2 font-medium"><i class="far fa-file-code mr-2 opacity-50"></i>${p.name}</span>
+                    <button onclick="deleteProject('${p.id}', event)" class="delete-btn opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all p-1">
+                        <i class="fas fa-trash-alt text-xs"></i>
+                    </button>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function loadProject(id) {
+            currentProjectId = id;
+            localStorage.setItem('ai_builder_current_id', id);
+            const project = projects.find(p => p.id === id);
+            if (project) updatePreview(project.code);
+            renderProjectList();
+        }
+
+        function setView(view) {
+            const isPrev = view === 'preview';
+            document.getElementById('preview-container').classList.toggle('hidden', !isPrev);
+            document.getElementById('code-container').classList.toggle('hidden', isPrev);
+            document.getElementById('btn-preview').className = isPrev ? "px-4 py-1.5 rounded-md bg-blue-600 text-white shadow-sm" : "px-4 py-1.5 rounded-md text-slate-400 hover:text-white";
+            document.getElementById('btn-code').className = !isPrev ? "px-4 py-1.5 rounded-md bg-blue-600 text-white shadow-sm" : "px-4 py-1.5 rounded-md text-slate-400 hover:text-white";
+        }
+
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('mobile-hidden'); }
+
+        function updatePreview(html) {
+            document.getElementById('code-editor').value = html;
+            const doc = document.getElementById('preview-frame').contentWindow.document;
+            doc.open(); doc.write(html || '<body style="background:#fff;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#94a3b8">Your AI masterpiece will appear here...</body>'); doc.close();
+        }
+
+        function downloadCode() {
+            const code = document.getElementById('code-editor').value;
+            if(!code) return alert("Nothing to export!");
+            const blob = new Blob([code], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'index.html'; a.click();
+        }
+
+        function undoChange() {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (project && project.history.length > 2) {
+                project.history.splice(-2);
+                project.code = project.history.length > 0 ? project.history[project.history.length-1].content : "";
+                saveProjects();
+                updatePreview(project.code);
+            } else { alert("No more undos available."); }
+        }
+
+        function applyTemplate(t) { document.getElementById('user-input').value = t; document.getElementById('user-input').focus(); }
+
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const prompt = input.value.trim();
+            const settings = JSON.parse(localStorage.getItem('ai_builder_settings')) || DEFAULT_SETTINGS;
+            if (!prompt || !settings.key) return alert("Enter a prompt and check your API key.");
+
+            const sendBtn = document.getElementById('send-btn');
+            const loader = document.getElementById('loading-indicator');
+            input.disabled = true; sendBtn.classList.add('hidden'); loader.classList.remove('hidden');
+
+            const project = projects.find(p => p.id === currentProjectId);
+            const messages = [{ role: "system", content: SYSTEM_PROMPT }, ...project.history, { role: "user", content: prompt }];
+
+            try {
+                const response = await fetch(settings.url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.key}`, 'X-Title': 'METAI' },
+                    body: JSON.stringify({ model: settings.model, messages: messages })
+                });
+                const data = await response.json();
+                let aiContent = (data.choices?.[0]?.message?.content || "").replace(/```html|```|<think>[\s\S]*?<\/think>/g, '');
+                
+                project.history.push({ role: "user", content: prompt }, { role: "assistant", content: aiContent });
+                project.code = aiContent;
+                saveProjects(); updatePreview(aiContent);
+                input.value = '';
+            } catch (error) { alert("Error connecting to AI."); } 
+            finally { input.disabled = false; sendBtn.classList.remove('hidden'); loader.classList.add('hidden'); }
+        }
+    </script>
+</body>
+  </html>
